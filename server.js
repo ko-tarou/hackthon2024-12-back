@@ -94,3 +94,31 @@ process.on("SIGINT", () => {
     process.exit(0); // 正常にプロセスを終了
   });
 });
+
+let textBoxes = []; // テキストボックスの情報を保持
+
+io.on("connection", (socket) => {
+  console.log("クライアントが接続しました:", socket.id);
+
+  // 新しいクライアントに既存のテキストボックスを送信
+  socket.emit("textBoxes", textBoxes);
+
+  // 新規テキストボックスの追加
+  socket.on("addTextBox", (newBox) => {
+    textBoxes.push(newBox);
+    io.emit("textBoxUpdated", newBox);
+  });
+
+  // テキストボックスの座標またはテキストの更新
+  socket.on("updateTextBox", (updatedBox) => {
+    const index = textBoxes.findIndex((box) => box.id === updatedBox.id);
+    if (index !== -1) {
+      textBoxes[index] = updatedBox;
+      io.emit("textBoxUpdated", updatedBox);
+    }
+  });
+
+  socket.on("disconnect", () => {
+    console.log("クライアントが切断しました:", socket.id);
+  });
+});
