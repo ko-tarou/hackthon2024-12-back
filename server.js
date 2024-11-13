@@ -12,7 +12,7 @@ const port = 5000;
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
-    origin: "http://localhost:3000", // クライアントのURLに合わせて変更
+    origin: "*", // クライアントのURLに合わせて変更
     methods: ["GET", "POST"]
   }
 });
@@ -79,8 +79,8 @@ io.on("connection", (socket) => {
 });
 
 // HTTPサーバーを起動（Socket.IOも対応）
-httpServer.listen(port, () => {
-  console.log(`Server is running on http://localhost:${port}`);
+httpServer.listen(port, "0.0.0.0", () => {
+  console.log(`Server is running on http://0.0.0.0:${port}`);
 });
 
 // サーバー終了時にデータベース接続を閉じる
@@ -117,6 +117,11 @@ io.on("connection", (socket) => {
       io.emit("textBoxUpdated", updatedBox);
     }
   });
+
+  socket.on("deleteTextBox",(boxId) => {
+    textBoxes = textBoxes.filter((box) => box.id !== boxId);
+    io.emit("deleteTextBox",boxId);
+  })
 
   socket.on("disconnect", () => {
     console.log("クライアントが切断しました:", socket.id);
