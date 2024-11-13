@@ -12,7 +12,7 @@ const port = 5000;
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
-    origin: "http://localhost:3000", // クライアントのURLに合わせて変更
+    origin: "*", // クライアントのURLに合わせて変更
     methods: ["GET", "POST"]
   }
 });
@@ -79,8 +79,8 @@ io.on("connection", (socket) => {
 });
 
 // HTTPサーバーを起動（Socket.IOも対応）
-httpServer.listen(port, () => {
-  console.log(`Server is running on http://localhost:${port}`);
+httpServer.listen(port, "0.0.0.0", () => {
+  console.log(`Server is running on http://0.0.0.0:${port}`);
 });
 
 // サーバー終了時にデータベース接続を閉じる
@@ -92,5 +92,38 @@ process.on("SIGINT", () => {
       console.log("データベース接続が正常に閉じられました。");
     }
     process.exit(0); // 正常にプロセスを終了
+  });
+});
+
+let textBoxes = []; // テキストボックスの情報を保持
+
+io.on("connection", (socket) => {
+  console.log("クライアントが接続しました:", socket.id);
+
+  // 新しいクライアントに既存のテキストボックスを送信
+  socket.emit("textBoxes", textBoxes);
+
+  // 新規テキストボックスの追加
+  socket.on("addTextBox", (newBox) => {
+    textBoxes.push(newBox);
+    io.emit("textBoxUpdated", newBox);
+  });
+
+  // テキストボックスの座標またはテキストの更新
+  socket.on("updateTextBox", (updatedBox) => {
+    const index = textBoxes.findIndex((box) => box.id === updatedBox.id);
+    if (index !== -1) {
+      textBoxes[index] = updatedBox;
+      io.emit("textBoxUpdated", updatedBox);
+    }
+  });
+
+  socket.on("deleteTextBox",(boxId) => {
+    textBoxes = textBoxes.filter((box) => box.id !== boxId);
+    io.emit("deleteTextBox",boxId);
+  })
+
+  socket.on("disconnect", () => {
+    console.log("クライアントが切断しました:", socket.id);
   });
 });
