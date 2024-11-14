@@ -4,6 +4,7 @@ const bodyParser = require("body-parser");
 const cors = require("cors");
 const { createServer } = require("http");
 const { Server } = require("socket.io");
+const path = require("path")
 
 const app = express();
 const port = 5000;
@@ -19,6 +20,9 @@ const io = new Server(httpServer, {
 
 app.use(cors());
 app.use(bodyParser.json());
+
+//Reactのビルドされた静的ファイルを提供
+app.use(express.static(path.join(__dirname,'build')));
 
 // データベースの接続
 let db = new sqlite3.Database("./data.db", (err) => {
@@ -77,6 +81,10 @@ io.on("connection", (socket) => {
     console.log("クライアントが切断しました:", socket.id);
   });
 });
+
+app.get("*",(req,res) => {
+  res.sendFile(path.join(__dirname,"build","index.html"))
+})
 
 // HTTPサーバーを起動（Socket.IOも対応）
 httpServer.listen(port, "0.0.0.0", () => {
